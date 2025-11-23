@@ -1,0 +1,42 @@
+menu "UART Configuration ESP32"
+
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+    config UART_PORT_NUM
+        int "UART port number"
+        range 0 2
+        default 0
+        help
+            UART communication port number for the example.
+            See UART documentation for available port numbers.
+
+    config UART_BAUD_RATE
+        int "UART communication speed"
+        range 1200 115200
+        default 115200
+        help
+            UART communication speed for Modbus example.
+
+    config UART_RXD
+        int "UART RXD pin number"
+        default -1
+        help
+            GPIO number for UART RX pin. See UART documentation for more information
+            about available pin numbers for UART.
+
+    config UART_TXD
+        int "UART TXD pin number"
+        default -1
+        help
+            GPIO number for UART TX pin. See UART documentation for more information
+            about available pin numbers for UART.
+
+endmenu
+
+menu "GPIO pin of on-Board LED"
+    config GPIO_OF_ON_BOARD_LED
+        int "GPIO number"
+        default 2
+        help 
+            The on-board LED on most ESP32 development boards is connected to GPIO 2
+endmenu

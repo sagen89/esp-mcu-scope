@@ -1,0 +1,9 @@
+# Build artifacts
+build/
+sdkconfig
+sdkconfig.defaults
+# Temporary files
+*.pyc
+*.swp
+# VS Code specific
+.vscode/
