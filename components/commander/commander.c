@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define GPIO_OF_ON_BOARD_LED (CONFIG_GPIO_OF_ON_BOARD_LED)
 
@@ -26,7 +27,7 @@ static void change_level_onBoard_Led(void) {
 }
 
 void commander_blink(int32_t count) {
-    if (count == 0) {
+    if (count < 1) {
         change_level_onBoard_Led();
     } else {
         led_state = 0;

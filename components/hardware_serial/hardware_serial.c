@@ -9,11 +9,13 @@
 #define UART_RTS (UART_PIN_NO_CHANGE)
 #define UART_CTS (UART_PIN_NO_CHANGE)
 
-#define UART_PORT_NUM      (CONFIG_UART_PORT_NUM)
-#define UART_BAUD_RATE     (CONFIG_UART_BAUD_RATE)
+#define UART_PORT_NUM (CONFIG_UART_PORT_NUM)
+#define UART_BAUD_RATE (CONFIG_UART_BAUD_RATE)
 
-#define BUF_SIZE (1024)
-#define TIMEOUT_MS (10000)
+#define TIKCS_TO_WAIT (20 / portTICK_PERIOD_MS)
+
+int global_rx_buff_size = CONFIG_RX_BUFFER_SIZE;
+int global_tx_buff_size = CONFIG_TX_BUFFER_SIZE;
 
 uart_config_t uart_config = {
         .baud_rate = UART_BAUD_RATE,
@@ -26,9 +28,9 @@ uart_config_t uart_config = {
 
 void serial_begin(void) {
     int intr_alloc_flags = 0;
-    uart_driver_install(UART_PORT_NUM, BUF_SIZE * 2, 0, 0, NULL, intr_alloc_flags);
-    uart_param_config(UART_PORT_NUM, &uart_config);
-    uart_set_pin(UART_PORT_NUM, UART_TXD, UART_RXD, UART_RTS, UART_CTS);
+    ESP_ERROR_CHECK(uart_driver_install(UART_PORT_NUM, global_rx_buff_size * 2, global_tx_buff_size * 2, 0, NULL, intr_alloc_flags));
+    ESP_ERROR_CHECK(uart_param_config(UART_PORT_NUM, &uart_config));
+    ESP_ERROR_CHECK(uart_set_pin(UART_PORT_NUM, UART_TXD, UART_RXD, UART_RTS, UART_CTS));
 }
 
 uint16_t serial_available() {
@@ -42,7 +44,7 @@ void serial_flush() {
 }
 
 int serial_read_bytes(uint8_t *buffer, int length) {
-    return uart_read_bytes(UART_PORT_NUM, buffer, (size_t)length, pdMS_TO_TICKS(TIMEOUT_MS));
+    return uart_read_bytes(UART_PORT_NUM, buffer, (size_t)length, TIKCS_TO_WAIT);
 }
 
 int serial_write_bytes(const uint8_t *buffer, int size) {

@@ -1,11 +1,9 @@
 menu "UART Configuration ESP32"
 
-    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
-
     config UART_PORT_NUM
         int "UART port number"
         range 0 2
-        default 0
+        default 2
         help
             UART communication port number for the example.
             See UART documentation for available port numbers.
@@ -19,18 +17,35 @@ menu "UART Configuration ESP32"
 
     config UART_RXD
         int "UART RXD pin number"
-        default -1
+        default 5
         help
             GPIO number for UART RX pin. See UART documentation for more information
             about available pin numbers for UART.
 
     config UART_TXD
         int "UART TXD pin number"
-        default -1
+        default 4
         help
             GPIO number for UART TX pin. See UART documentation for more information
             about available pin numbers for UART.
+    
+    config RX_BUFFER_SIZE
+        int "UART RX ring buffer size"
+        default 1024
+    
+    config TX_BUFFER_SIZE
+        int "UART TX ring buffer size"
+        default 0
+        help
+            If set to zero, driver will not use TX buffer,
+            TX function will block task until all data have been sent out.
 
+endmenu
+
+menu "Parameters of communication protocol between PC and MCU"
+    config SIZE_OF_ELEMENTS_PDU
+        int "size elements of protocol data unit [byte]"
+        default 4
 endmenu
 
 menu "GPIO pin of on-Board LED"

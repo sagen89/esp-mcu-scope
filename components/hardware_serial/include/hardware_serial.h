@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+extern int global_rx_buff_size;
+
 void serial_begin(void);
 
 uint16_t serial_available();
