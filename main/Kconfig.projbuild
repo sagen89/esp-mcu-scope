@@ -17,14 +17,14 @@ menu "UART Configuration ESP32"
 
     config UART_RXD
         int "UART RXD pin number"
-        default 5
+        default 16
         help
             GPIO number for UART RX pin. See UART documentation for more information
             about available pin numbers for UART.
 
     config UART_TXD
         int "UART TXD pin number"
-        default 4
+        default 17
         help
             GPIO number for UART TX pin. See UART documentation for more information
             about available pin numbers for UART.
@@ -46,6 +46,10 @@ menu "Parameters of communication protocol between PC and MCU"
     config SIZE_OF_ELEMENTS_PDU
         int "size elements of protocol data unit [byte]"
         default 4
+
+    config IS_LSB
+        int "switch between MSB (Most Significant Bit) and LSB (Least Significant Bit)"
+        default 0
 endmenu
 
 menu "GPIO pin of on-Board LED"
@@ -54,4 +58,24 @@ menu "GPIO pin of on-Board LED"
         default 2
         help 
             The on-board LED on most ESP32 development boards is connected to GPIO 2
+endmenu
+
+menu "LEDC config"
+    config LEDC_TIMER_NUM
+        int "h_timerx"
+        default 2
+
+    config LEDC_CHANNEL_NUM
+        int "hschn"
+        default 2       
+endmenu
+
+menu "ADC config"
+    config FRAME_SIZE
+        int "frame_size"
+        default 20
+
+    config SAMPLE_FREQ_HZ
+        int "sample_freq_hz"
+        default 100000       
 endmenu

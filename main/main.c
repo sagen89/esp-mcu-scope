@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -9,7 +10,8 @@
 #include "esp_log.h"
 
 #define SIZE_OF_ELEMENTS_PDU (CONFIG_SIZE_OF_ELEMENTS_PDU)
-
+#define LEDC_TIMER_NUM (CONFIG_LEDC_TIMER_NUM)
+#define LEDC_CHANNEL_NUM (CONFIG_LEDC_CHANNEL_NUM)
 
 int32_t command;
 int32_t transmittedValue ;
@@ -78,15 +80,16 @@ void commander_task(void *arg) {
 void app_main(void) {
     serial_begin();
     commander_configure_on_board_led();
-    
+    // commander_add_interrupt_of_LEDC_module();
+
     // uint8_t bytes_of_command_and_values[1 + NUMBER_OF_ELEMENTS][__max(SIZE_OF_COMMAND, SIZE_OF_ELEMENT)];
 
     uint8_t *protocol_data = (uint8_t *) malloc(global_rx_buff_size);
+    // int32_t *timers = (int32_t *) malloc(LEDC_TIMER_NUM * 3*4);
+    // int32_t *channels = (int32_t *) malloc(LEDC_CHANNEL_NUM * 3*4);
 
     while (1) {
         int length = serial_read_bytes(protocol_data, global_rx_buff_size - 1);
-        serial_write_bytes(protocol_data, length);
-
 
         if (length) {
             ESP_LOGI(TAG, "Received bytes %d from UART%d: %s", 
@@ -97,9 +100,10 @@ void app_main(void) {
             continue;
         }
 
+
         uint8_t rows = length / SIZE_OF_ELEMENTS_PDU;
         uint8_t bytes_of_command_and_values[rows][SIZE_OF_ELEMENTS_PDU];
-        uint8_t command_and_values[rows][1];
+        int32_t command_and_values[rows][1];
         for (uint8_t i = 0; i < rows; i++) {
             memcpy(&bytes_of_command_and_values[i], &protocol_data[i * SIZE_OF_ELEMENTS_PDU], SIZE_OF_ELEMENTS_PDU);
             command_and_values[i][0] = converter_bytes_to_int32(bytes_of_command_and_values[i]);
@@ -111,10 +115,44 @@ void app_main(void) {
             case(BLINK):
                 ESP_LOGI(TAG, "BLINK command: %d", command_and_values[1][0]);
                 commander_blink(command_and_values[1][0]);
-                break;
-            case(SET_UP_CHANNEL_ONE):
+                write_int32(command_and_values[0][0]);
+                write_int32(command_and_values[1][0]);
+                break; 
+            case(ADC_UNIT_INIT):
                 serial_flush();
                 break;
+            case(LEDC_CONFIGURE):
+                int32_t timers[LEDC_TIMER_NUM * 3] = {-1};
+                int32_t channels[LEDC_CHANNEL_NUM * 3] = {-1};
+                ESP_LOGI(TAG, "LEDC_CONFIGURE command: %d", command_and_values[1][0]);
+                commander_configure_of_LEDC(timers, channels);
+                write_int32(command_and_values[0][0]);
+
+                for (uint8_t i = 0; i < LEDC_TIMER_NUM * 3; i++) {
+                    // ESP_LOGI(TAG, "LEDC_TIMER: %d", timers[i]);
+                    write_int32(timers[i]);
+                }
+                for (uint8_t i = 0; i < LEDC_CHANNEL_NUM * 3; i++) {
+                    // ESP_LOGI(TAG, "LEDC_CHANNEL: %d", channels[i]);
+                    write_int32(channels[i]);
+                }
+                
+                break;
+            case(LEDC_RECONFIGURE_TIMER):
+                ESP_LOGI(TAG, "LEDC_RECONFIGURE_TIMER command: %d, %d", command_and_values[1][0], command_and_values[2][0]);
+                write_int32(command_and_values[0][0]);
+                write_int32(commander_reconfigure_LEDC_timer(command_and_values[1][0], command_and_values[2][0]));
+                break;
+            case(LEDC_RECONFIGURE_CHANNEL):
+                ESP_LOGI(TAG, "LEDC_RECONFIGURE_CHANNEL command:  %d, %d, %d", command_and_values[1][0], command_and_values[2][0], command_and_values[3][0]);
+                write_int32(command_and_values[0][0]);
+                write_int32(commander_reconfigure_LEDC_channel(command_and_values[1][0], command_and_values[2][0], command_and_values[3][0]));
+                break;
+            case(LEDC_SET_DUTY):
+                ESP_LOGI(TAG, "LEDC_SET_DUTY command: %d, %d", command_and_values[1][0], command_and_values[2][0]);
+                write_int32(command_and_values[0][0]);
+                write_int32(commander_set_duty_of_LEDC_channel(command_and_values[1][0], command_and_values[2][0]));
+                break;    
             default: serial_flush(); break;
         }
     }
