@@ -23,60 +23,6 @@ int write_int32(int32_t value);
 // Function to convert a byte array to a hexadecimal string
 char* bytes_to_string(const uint8_t *data, size_t length);
 
-void commander_task(void *arg) {
-    serial_begin();
-    commander_configure_on_board_led();
-    // uint8_t data[8];
-    uint8_t data[8];
-    // uint8_t *cmdBuffer = (uint8_t *) malloc(4);;
-    // uint8_t *transmittedValueBuffer = (uint8_t *) malloc(4);;
-    while (1) {
-        
-        
-        int length = serial_read_bytes(data, 8);
-        serial_write_bytes(data, length);
-
-        // int len = serial_read_bytes(data, 8);
-        // serial_write_bytes(data, 8);
-
-        // if (serial_available() > 7) {
-            
-
-            // serial_read_bytes(cmdBuffer, 4);
-            // serial_read_bytes(transmittedValueBuffer, 4);
-            // serial_flush();
-
-            // command = converter_bytes_to_int32(cmdBuffer);
-            // transmittedValue = converter_bytes_to_int32(transmittedValueBuffer);
-            // uart_write_bytes(2, (const char *) cmdBuffer, 4);
-            // uart_write_bytes(2, (const char *) transmittedValueBuffer, 4);
-            // write_int32(command);
-            // write_int32(transmittedValue);
-            // switch (command) {
-            //     case(BLINK):
-                    
-            //         commander_blink(transmittedValue);
-            //         break;
-            //     case(SET_UP_CHANNEL_ONE):
-            //         serial_flush();
-            //         break;
-            //     default: serial_flush(); break;
-            // }
-            
-        // }
-        // Read data from the UART
-        // int len = uart_read_bytes(uart_port_num, data, (RX_BUFFER_SIZE - 1), 20 / portTICK_PERIOD_MS);
-        
-        
-        // Write data back to the UART
-        // uart_write_bytes(uart_port_num, (const char *) data, len);
-        // if (len) {
-        //     data[len] = '\0';
-        //     ESP_LOGI(TAG, "Recv str: %s", (char *) data);
-        // }
-    }
-}
-
 void app_main(void) {
     serial_begin();
     commander_configure_on_board_led();
@@ -114,44 +60,90 @@ void app_main(void) {
         switch (command_and_values[0][0]) {
             case(BLINK):
                 ESP_LOGI(TAG, "BLINK command: %d", command_and_values[1][0]);
+
                 commander_blink(command_and_values[1][0]);
                 write_int32(command_and_values[0][0]);
                 write_int32(command_and_values[1][0]);
                 break; 
-            case(ADC_UNIT_INIT):
-                serial_flush();
+            case(ADC_CONFIGURE_CONTINUOUS):
+                ESP_LOGI(TAG, "ADC_CONFIGURE_CONTINUOUS command: channel num: %d, sample freq: %d, count of samples by ch: %d", command_and_values[1][0], command_and_values[2][0], command_and_values[3][0]);
+               
+                write_int32(command_and_values[0][0]);
+                write_int32(commander_configure_of_ADC_continuous(command_and_values[1][0], command_and_values[2][0], command_and_values[3][0]));
+                break;
+            case(ADC_START_CONTINUOUS):
+                ESP_LOGI(TAG, "ADC_START_CONTINUOUS command");
+    
+                write_int32(command_and_values[0][0]);
+                write_int32(commander_start_ADC_continuous());
+                break;
+            case(ADC_READ_RAW_DATA_CONTINUOUS):
+                ESP_LOGI(TAG, "ADC_READ_RAW_DATA_CONTINUOUS command: %d", command_and_values[1][0]);
+                
+                int32_t *raw_data = (int32_t *) malloc(command_and_values[1][0] * sizeof(int32_t));
+                memset(raw_data, 0xFF, command_and_values[1][0] * sizeof(int32_t));
+
+                commander_read_raw_data_ADC_continuous(raw_data);
+
+                for (int32_t i = 0; i < command_and_values[1][0]; i++) {
+                    // ESP_LOGI(TAG, "ADC_READ_RAW_DATA_CONTINUOUS: %d", raw_data[i]);
+                    write_int32(raw_data[i]);
+                }
+
+                free(raw_data);
+                raw_data = NULL;
+                break;
+            case(ADC_STOP_CONTINUOUS):
+                ESP_LOGI(TAG, "ADC_STOP_CONTINUOUS command");
+                
+                write_int32(command_and_values[0][0]);
+                write_int32(commander_stop_ADC_continuous());
+                break;
+            case(ADC_DEINITIALIZE_CONTINUOUS):
+                ESP_LOGI(TAG, "ADC_DEINITIALIZE_CONTINUOUS command");
+                
+                write_int32(command_and_values[0][0]);
+                write_int32(commander_deinitialize_ADC_continuous());
                 break;
             case(LEDC_CONFIGURE):
-                int32_t timers[LEDC_TIMER_NUM * 3] = {-1};
-                int32_t channels[LEDC_CHANNEL_NUM * 3] = {-1};
                 ESP_LOGI(TAG, "LEDC_CONFIGURE command: %d", command_and_values[1][0]);
-                commander_configure_of_LEDC(timers, channels);
+
+                int32_t *timers = (int32_t *) malloc(LEDC_TIMER_NUM * 3 * sizeof(int32_t));
+                memset(timers, 0xFF, LEDC_TIMER_NUM * 3 * sizeof(int32_t));
+                int32_t *channels = (int32_t *) malloc(LEDC_CHANNEL_NUM * 3 * sizeof(int32_t));
+                memset(channels, 0xFF, LEDC_CHANNEL_NUM * 3 * sizeof(int32_t));
+                commander_configure_of_PWM(timers, channels);
+
                 write_int32(command_and_values[0][0]);
 
                 for (uint8_t i = 0; i < LEDC_TIMER_NUM * 3; i++) {
-                    // ESP_LOGI(TAG, "LEDC_TIMER: %d", timers[i]);
+                    ESP_LOGI(TAG, "LEDC_TIMER: %d", timers[i]);
                     write_int32(timers[i]);
                 }
                 for (uint8_t i = 0; i < LEDC_CHANNEL_NUM * 3; i++) {
-                    // ESP_LOGI(TAG, "LEDC_CHANNEL: %d", channels[i]);
+                    ESP_LOGI(TAG, "LEDC_CHANNEL: %d", channels[i]);
                     write_int32(channels[i]);
                 }
                 
+                free(timers);
+                timers = NULL;
+                free(channels);
+                channels = NULL;
                 break;
             case(LEDC_RECONFIGURE_TIMER):
                 ESP_LOGI(TAG, "LEDC_RECONFIGURE_TIMER command: %d, %d", command_and_values[1][0], command_and_values[2][0]);
                 write_int32(command_and_values[0][0]);
-                write_int32(commander_reconfigure_LEDC_timer(command_and_values[1][0], command_and_values[2][0]));
+                write_int32(commander_reconfigure_of_PWM_timer(command_and_values[1][0], command_and_values[2][0]));
                 break;
             case(LEDC_RECONFIGURE_CHANNEL):
                 ESP_LOGI(TAG, "LEDC_RECONFIGURE_CHANNEL command:  %d, %d, %d", command_and_values[1][0], command_and_values[2][0], command_and_values[3][0]);
                 write_int32(command_and_values[0][0]);
-                write_int32(commander_reconfigure_LEDC_channel(command_and_values[1][0], command_and_values[2][0], command_and_values[3][0]));
+                write_int32(commander_reconfigure_of_PWM_channel(command_and_values[1][0], command_and_values[2][0], command_and_values[3][0]));
                 break;
             case(LEDC_SET_DUTY):
                 ESP_LOGI(TAG, "LEDC_SET_DUTY command: %d, %d", command_and_values[1][0], command_and_values[2][0]);
                 write_int32(command_and_values[0][0]);
-                write_int32(commander_set_duty_of_LEDC_channel(command_and_values[1][0], command_and_values[2][0]));
+                write_int32(commander_set_duty_of_PWM_channel(command_and_values[1][0], command_and_values[2][0]));
                 break;    
             default: serial_flush(); break;
         }

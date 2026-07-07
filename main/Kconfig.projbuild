@@ -66,16 +66,20 @@ menu "LEDC config"
         default 2
 
     config LEDC_CHANNEL_NUM
-        int "hschn"
-        default 2       
+        int "h_schn"
+        default 2
+    
+    config TIMER_FREQ_HZ
+        int "timer frequency (Hz)"
+        default 50000
+    
 endmenu
 
 menu "ADC config"
-    config FRAME_SIZE
-        int "frame_size"
-        default 20
-
-    config SAMPLE_FREQ_HZ
-        int "sample_freq_hz"
-        default 100000       
+     
+    config ADC_ATTEN
+        int "adc attenuation"
+        range 0 3
+        default 3
+        
 endmenu
